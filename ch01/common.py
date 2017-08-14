@@ -68,9 +68,9 @@ download = download4
 
 if __name__ == '__main__':
     # print download('http://example.webscraping.com')
-    # print download('http://httpstat.us/500')
+    print download('http://httpstat.us/500', debug=True)
     # download('http://httpstat.us/200', data={'sleep': 6000}, debug=True)
     # print download('https://www.qiushibaike.com/qiushi/',
     #               user_agent="Yisouspider")
-    download('http://example.webscraping.com', debug=True, user_agent="wswp",
-             proxy="116.54.28.141:80")
+    #download('http://example.webscraping.com', debug=True, user_agent="wswp",
+    #         proxy="116.54.28.141:80")
