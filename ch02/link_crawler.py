@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 
 from common import download
-from scraping_callback import scraping_callback
+from scraping_callback2 import ScrapingCallback
 
 
 def link_crawler(seed_url, link_regex=None, user_agent="wswp", headers=None,
@@ -80,13 +80,10 @@ def match(link, link_regex):
 
 
 if __name__ == "__main__":
-    proxies = {
-        "http": "116.117.149.10:8080"
-    }
+
     link_crawler(seed_url="http://example.webscraping.com",
                  link_regex="/places/default/(view|index)",
-                 proxies=proxies,
-                 delay=-1,
+                 delay=1,
                  max_depth=-1,
-                 scraping_callback=scraping_callback,
+                 scraping_callback=ScrapingCallback(),
                  )
