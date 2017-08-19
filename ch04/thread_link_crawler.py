@@ -74,7 +74,6 @@ def match(link, link_regex):
 
 
 if __name__ == "__main__":
-    start = datetime.datetime.now()
     link_crawler(seed_url="http://top.chinaz.com/alltop/",
                  link_regex=None,
                  delay=2,
@@ -83,5 +82,3 @@ if __name__ == "__main__":
                  timeout=10,
                  cache=MongoCache('topsite', 'top1t.thread')
                  )
-    end = datetime.datetime.now()
-    print 'cost', (end - start).seconds, 's'
