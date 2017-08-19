@@ -4,29 +4,26 @@ import urlparse
 import csv
 import threading
 import time
-import datetime
+import multiprocessing
 
 from cache import MongoCache
 from downloader import Downloader
+from mongo_queue import MongoQueue
 
-MAX_THREADS = 5
 SLEEP_TIME =1
 
 
-def link_crawler(seed_url, link_regex=None, proxies=None,
-                 delay=1, max_depth=-1, max_urls=-1, timeout=5,
-                 cache=None, scraping_callback=None, debug=False):
-    num_urls = 0
-    crawl_queue = []
+def link_crawler(seed_url, link_regex=None, proxies=None, delay=1, max_depth=-1,
+                 max_urls=-1, timeout=5, cache=None, scraping_callback=None,
+                 max_threads=10, debug=False):
+    crawl_queue = MongoQueue('topsite', 'cralw_queue')
 
     # 读取topsite.csv，将排行榜的网站url保存到爬取队列
     with open('topsite.csv', 'rb') as f:
         csv_reader = csv.reader(f)
         csv_reader.next()
         for _, website in csv_reader:
-            crawl_queue.append(website)
-
-    crawl_queue.reverse()
+            crawl_queue.push(website)
 
     d = Downloader(cache=cache, delay=delay,
                    proxies=proxies, timeout=timeout, debug=debug)
@@ -39,13 +36,14 @@ def link_crawler(seed_url, link_regex=None, proxies=None,
                 break
             else:
                 d(url)
+                crawl_queue.complete(url)
 
     threads = []
     while threads or crawl_queue:
         for thread in threads:
             if not thread.is_alive():
                 threads.remove(thread)
-        while len(threads) < MAX_THREADS and crawl_queue:
+        while len(threads) < max_threads and crawl_queue:
             t = threading.Thread(target=thread_crawl)
             threads.append(t)
             t.setDaemon(True)
@@ -73,15 +71,26 @@ def match(link, link_regex):
     return re.search(link_regex, link)
 
 
+def process_crawl(*args, **kw):
+    nums_cpu = multiprocessing.cpu_count()
+    print 'starting {0} processes'.format(nums_cpu)
+    processes = []
+    for i in range(nums_cpu):
+        p = multiprocessing.Process(target=link_crawler, args=args, kwargs=kw)
+        p.start()
+        processes.append(p)
+    for p in processes:
+        p.join()
+
+
 if __name__ == "__main__":
-    start = datetime.datetime.now()
-    link_crawler(seed_url="http://top.chinaz.com/alltop/",
-                 link_regex=None,
-                 delay=2,
-                 max_depth=-1,
-                 max_urls=330,
-                 timeout=10,
-                 cache=MongoCache('topsite', 'top1t.thread')
-                 )
-    end = datetime.datetime.now()
-    print 'cost', (end - start).seconds, 's'
+    process_crawl(
+        "http://top.chinaz.com/alltop/",
+        link_regex=None,
+        delay=2,
+        max_depth=-1,
+        max_urls=330,
+        timeout=10,
+        max_threads=4,
+        cache=MongoCache('topsite', 'top1t.process')
+    )
