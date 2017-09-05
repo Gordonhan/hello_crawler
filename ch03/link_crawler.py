@@ -1,7 +1,8 @@
 # -*- coding:utf-8 -*-
 import re
+import robotparser
 import urlparse
-import requests
+import pymongo
 
 from cache import MongoCache
 from downloader import Downloader
@@ -10,7 +11,8 @@ from scraping_callback import ScrapingCallback
 
 def link_crawler(seed_url, link_regex=None, user_agent="wswp", proxies=None,
                  delay=1, max_depth=-1, max_urls=-1, timeout=5,
-                 cache=None, scraping_callback=None, debug=False):
+                 cache=None, scraping_callback=None, debug=False,
+                 follow_robot=False):
     num_urls = 0
 
     crawl_queue = [seed_url]
@@ -18,27 +20,22 @@ def link_crawler(seed_url, link_regex=None, user_agent="wswp", proxies=None,
 
     d = Downloader(cache=cache, delay=delay, user_agent=user_agent,
                    proxies=proxies, timeout=timeout, debug=debug)
+    rp = get_robots(seed_url)
     while crawl_queue:
         url = crawl_queue.pop()
+        if follow_robot:
+            if not (rp is None or rp.can_fetch(user_agent, url)):
+                print 'Blocked by robots.txt:', url
+                continue
 
-        try:
-            html = d(url)
-        except requests.exceptions.HTTPError:
-            continue
-        except requests.exceptions.Timeout:
-            continue
-
+        html = d(url)
         if scraping_callback:
             scraping_callback(url, html)
 
         depth = seen[url]
         if depth != max_depth:
-            if link_regex:
-                links = [link for link in get_links(html)
-                         if match(link, link_regex)]
-
+            links = [normalize(seed_url, link) for link in get_links(html) if match(link, link_regex)] if link_regex else []
             for link in links:
-                link = normalize(seed_url, link)
                 if same_domain(seed_url, link) and link not in seen:
                     crawl_queue.append(link)
                     seen[link] = depth + 1
@@ -46,7 +43,23 @@ def link_crawler(seed_url, link_regex=None, user_agent="wswp", proxies=None,
         num_urls += 1
         if num_urls == max_urls:
             break
-    print num_urls
+
+
+def get_robots(url):
+    rp = robotparser.RobotFileParser()
+    components = urlparse.urlparse(url)
+    rp.set_url(
+        urlparse.urljoin(
+            components.scheme + "://" + components.netloc, '/robots.txt'
+        )
+    )
+    try:
+        rp.read()
+    except IOError:
+        print "Can't read robots.txt"
+        return None
+    else:
+        return rp
 
 
 def same_domain(seed_url, url):
@@ -54,6 +67,7 @@ def same_domain(seed_url, url):
 
 
 def normalize(seed_url, link):
+    link, _ = urlparse.urldefrag(link)
     components = urlparse.urlparse(seed_url)
     return urlparse.urljoin(components.scheme + "://" + components.netloc, link)
 
@@ -68,7 +82,8 @@ def match(link, link_regex):
 
 
 if __name__ == "__main__":
-    mongo_cache = MongoCache()
+    client = pymongo.MongoClient('localhost', 27017)
+    mongo_cache = MongoCache(client=client)
     link_crawler(seed_url="http://example.webscraping.com",
                  link_regex="/places/default/(view|index)",
                  delay=1,

@@ -8,12 +8,13 @@ from datetime import datetime
 
 import requests
 
+from util import get_header
+
 
 class Downloader(object):
-    def __init__(self, cache=None, delay=1, user_agent='wswp',
-                 proxies=None, timeout=5, debug=False):
+    def __init__(self, cache=None, delay=1, proxies=None, timeout=5,
+                 debug=False):
         self.throttle = Throttle(delay)
-        self.user_agent = user_agent
         self.proxies = proxies
         self.timeout = timeout
         self.debug = debug
@@ -29,7 +30,8 @@ class Downloader(object):
                 pass
         if result is None:
             self.throttle.wait(url)
-            headers = {'user-agent': self.user_agent}
+            # 随机生成请求首部
+            headers = get_header()
             result = self.download(url, headers, self.proxies, self.timeout,
                                    self.debug)
             if self.cache:
@@ -81,4 +83,3 @@ class Throttle(object):
             if sleep_time > 0:
                 time.sleep(sleep_time)
         self.domains[domain] = datetime.now()
-
