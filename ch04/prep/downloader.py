@@ -61,11 +61,12 @@ def decode_content(r):
     if encoding == 'ISO-8859-1':
         # 查找响应页面<header>标签中设置的编码
         encodings = requests.utils.get_encodings_from_content(r.text)
-        # 如果上一步能查找出编码，则用之，否则查找响应首部设置的编码
+        # 如果上一步能查找出编码，则用之，否则使用chardet对响应内容进行推断
+        # 备注：r.apparent_encoding 内部使用chardet
         encoding = encodings[0] if encodings else r.apparent_encoding
     # return r.content.decode(encoding, 'replace').encode('utf-8', 'replace')
     # 对二进制响应内容进行解码
-    r.content.decode(encoding, 'replace')
+    return r.content.decode(encoding, 'replace')
 
 
 class Throttle(object):
