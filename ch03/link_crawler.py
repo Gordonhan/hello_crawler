@@ -47,12 +47,7 @@ def link_crawler(seed_url, link_regex=None, user_agent="wswp", proxies=None,
 
 def get_robots(url):
     rp = robotparser.RobotFileParser()
-    components = urlparse.urlparse(url)
-    rp.set_url(
-        urlparse.urljoin(
-            components.scheme + "://" + components.netloc, '/robots.txt'
-        )
-    )
+    rp.set_url(urlparse.urljoin(url, '/robots.txt'))
     try:
         rp.read()
     except IOError:
@@ -68,8 +63,7 @@ def same_domain(seed_url, url):
 
 def normalize(seed_url, link):
     link, _ = urlparse.urldefrag(link)
-    components = urlparse.urlparse(seed_url)
-    return urlparse.urljoin(components.scheme + "://" + components.netloc, link)
+    return urlparse.urljoin(seed_url, link)
 
 
 def get_links(html):

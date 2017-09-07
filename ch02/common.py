@@ -38,7 +38,7 @@ def decode_content(r):
         encoding = encodings[0] if encodings else r.apparent_encoding
     # return r.content.decode(encoding, 'replace').encode('utf-8', 'replace')
     # 对二进制响应内容进行解码
-        return r.content.decode(encoding, 'replace')
+    return r.content.decode(encoding, 'replace')
 
 
 if __name__ == '__main__':

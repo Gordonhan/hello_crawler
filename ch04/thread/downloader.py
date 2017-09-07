@@ -5,6 +5,7 @@ refactor common.py with Requests(http://cn.python-requests.org/zh_CN/latest/)
 import urlparse
 import time
 from datetime import datetime
+
 import requests
 
 from util import get_header

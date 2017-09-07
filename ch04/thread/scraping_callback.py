@@ -8,8 +8,8 @@ class ScrapingCallback(object):
         self.seed_url = 'http://example.webscraping.com'
 
     def __call__(self, url, html):
+        urls = []
         if url == self.seed_url:
-            urls = []
             with open('topsite.csv', 'rb') as f:
                 r = csv.reader(f)
                 r.next()
@@ -17,8 +17,4 @@ class ScrapingCallback(object):
                     urls.append(website)
                     if len(urls) == self.max_urls:
                         break
-            urls.reverse()
-            return urls
-        else:
-            return []
-
+        return urls

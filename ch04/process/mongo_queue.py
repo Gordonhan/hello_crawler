@@ -3,15 +3,18 @@
 from pymongo import MongoClient, errors
 from datetime import datetime, timedelta
 
+DEFAULT_DB = 'topsite'
+DEFAULT_COLLECTION = 'queue'
+
 
 class MongoQueue(object):
     OUTSTANDING, PROCESSING, COMPLETE = range(3)
 
-    def __init__(self, db, collection, cline=None, timeout=300):
-        self.cline = cline if cline\
+    def __init__(self, client=None, timeout=300):
+        self.client = client if client\
             else MongoClient(host='localhost', port=27017)
-        self.db = cline[db]
-        self.collection = self.db[collection]
+        self.db = self.client[DEFAULT_DB]
+        self.collection = self.db[DEFAULT_COLLECTION]
         self.timeout = timeout
 
     def __nonzero__(self):
